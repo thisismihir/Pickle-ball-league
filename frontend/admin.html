@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Pick-a-League</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <div class="nav-content">
+            <a href="index.html" class="nav-brand">🏓 Pick-a-League</a>
+            <div class="nav-links">
+                <a href="standings.html" class="nav-link">Standings</a>
+                <a href="fixtures.html" class="nav-link">Fixtures</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+            </div>
+            <div class="nav-actions">
+                <span class="user-info" id="userInfo"></span>
+                <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">Admin Dashboard</h1>
+    </div>
+
+    <div id="message" class="alert alert-success" style="display:none;"></div>
+
+    <!-- Tabs -->
+    <div style="border-bottom: 2px solid #e5e7eb; margin-bottom: 2rem;">
+        <button class="tab-btn active" onclick="switchTab('teams', event)">Teams</button>
+        <button class="tab-btn" onclick="switchTab('players', event)">Unassigned Players</button>
+        <button class="tab-btn" onclick="switchTab('fixtures', event)">Fixtures</button>
+    </div>
+
+    <div id="content"></div>
+</div>
+
+<style>
+.tab-btn {
+    padding: 1rem 1.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-weight: 500;
+    color: #6b7280;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.tab-btn.active {
+    color: #0ea5e9;
+    border-bottom-color: #0ea5e9;
+}
+
+.team-card, .player-card {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+</style>
+
+<script src="js/auth.js?v=6"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js?v=6"></script>
+
+<script>
+
+const user = requireAdmin();
+if (user) {
+    document.getElementById('userInfo').textContent = ${user.username} (Admin);
+    document.getElementById('logoutBtn').onclick = logout;
+}
+
+let currentTab = 'teams';
+
+function switchTab(tab, event) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn')
+        .forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    loadTabContent();
+}
+
+async function loadTabContent() {
+    const content = document.getElementById('content');
+    content.innerHTML = <div class="loading">Loading...</div>;
+
+    try {
+        if (currentTab === 'teams') {
+            await loadTeams();
+        } else if (currentTab === 'players') {
+            await loadPlayers();
+        } else if (currentTab === 'fixtures') {
+            await loadFixtures();
+        }
+    } catch (error) {
+        content.innerHTML =
+            <div class="alert alert-error">Failed to load content: ${error.message}</div>;
+    }
+}
+
+async function loadTeams() {
+    const teams = await api.getTeams(true);
+    const content = document.getElementById('content');
+
+    if (!teams.length) {
+        content.innerHTML = <div class="empty-state">No teams registered yet.</div>;
+        return;
+    }
+
+    let html = '';
+
+    teams.forEach(team => {
+        html += `
+        <div class="team-card">
+            <div style="display:flex; justify-content:space-between;">
+                <div>
+                    <h3>${team.name}
+                        <span class="badge ${
+                            team.status === 'approved' ? 'badge-success'
+                            : team.status === 'pending' ? 'badge-warning'
+                            : 'badge-danger'
+                        }">${team.status}</span>
+                    </h3>
+                    ${team.description ? <p>${team.description}</p> : ''}
+                </div>
+            </div>
+
+            ${team.status === 'pending' ? `
+            <div class="action-buttons">
+                <button class="btn btn-success"
+                    onclick="approveTeam(${team.id}, true)">Approve</button>
+                <button class="btn btn-danger"
+                    onclick="approveTeam(${team.id}, false)">Reject</button>
+            </div>
+            ` : ''}
+        </div>
+        `;
+    });
+
+    content.innerHTML = html;
+}
+
+async function loadPlayers() {
+    const players = await api.getPlayers(true, true);
+    const content = document.getElementById('content');
+
+    if (!players.length) {
+        content.innerHTML =
+            <div class="empty-state">No unassigned players.</div>;
+        return;
+    }
+
+    let html = '';
+
+    players.forEach(player => {
+        html += `
+        <div class="player-card">
+            <div style="display:flex; justify-content:space-between;">
+                <div>
+                    <h3>${player.first_name} ${player.last_name}
+                        <span class="badge ${
+                            player.status === 'approved' ? 'badge-success'
+                            : player.status === 'pending' ? 'badge-warning'
+                            : 'badge-danger'
+                        }">${player.status}</span>
+                    </h3>
+                    <p>${player.email}</p>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                ${player.status === 'pending' ? `
+                    <button class="btn btn-success"
+                        onclick="approvePlayer(${player.id}, true)">Approve</button>
+                    <button class="btn btn-danger"
+                        onclick="approvePlayer(${player.id}, false)">Reject</button>
+                ` : ''}
+
+                ${player.status === 'approved' && !player.team_id ? `
+                    <button class="btn btn-primary"
+                        onclick="assignPlayer(${player.id})">Assign to Team</button>
+                ` : ''}
+            </div>
+        </div>
+        `;
+    });
+
+    content.innerHTML = html;
+}
+
+async function loadFixtures() {
+    const content = document.getElementById('content');
+
+    content.innerHTML = `
+        <div class="team-card">
+            <h2>Fixture Management</h2>
+            <div style="display:flex; gap:1rem;">
+                <button class="btn btn-primary"
+                    onclick="generateFixtures()">Generate Fixtures</button>
+                <button class="btn btn-danger"
+                    onclick="deleteFixtures()">Delete All Fixtures</button>
+            </div>
+        </div>
+
+        <div class="team-card" style="background:#dc2626; color:white;">
+            <h2>Danger Zone</h2>
+            <button class="btn"
+                onclick="resetTournament()">Reset Tournament</button>
+        </div>
+    `;
+}
+
+async function approvePlayer(playerId, approve) {
+    try {
+        await api.approvePlayer(playerId, approve ? 'approved' : 'rejected');
+        showMessage(Player ${approve ? 'approved' : 'rejected'} successfully);
+        await loadTabContent();
+    } catch (error) {
+        alert('Failed to update player: ' + error.message);
+    }
+}
+
+async function assignPlayer(playerId) {
+    const teamId = prompt('Enter Team ID to assign player:');
+    if (!teamId) return;
+
+    try {
+        await api.assignPlayer(playerId, parseInt(teamId));
+        showMessage('Player assigned successfully');
+        await loadTabContent();
+    } catch (error) {
+        alert('Failed to assign player: ' + error.message);
+    }
+}
+
+async function generateFixtures() {
+    if (!confirm('Generate fixtures for approved teams?')) return;
+
+    try {
+        await api.generateFixtures();
+        showMessage('Fixtures generated successfully');
+        await loadTabContent();
+    } catch (error) {
+        alert('Failed to generate fixtures');
+    }
+}
+
+async function deleteFixtures() {
+    if (!confirm('Delete all fixtures?')) return;
+
+    try {
+        await api.deleteFixtures();
+        showMessage('All fixtures deleted');
+        await loadTabContent();
+    } catch (error) {
+        alert('Failed to delete fixtures');
+    }
+}
+
+async function resetTournament() {
+    if (!confirm('WARNING: This will permanently delete ALL tournament data.'))
+        return;
+
+    if (prompt('Type YES to confirm') !== 'YES') {
+        alert('Reset cancelled');
+        return;
+    }
+
+    try {
+        await api.resetTournament();
+        showMessage('Tournament reset successfully');
+        await loadTabContent();
+    } catch (error) {
+        alert('Failed to reset tournament');
+    }
+}
+
+function showMessage(msg) {
+    const messageDiv = document.getElementById('message');
+    messageDiv.textContent = msg;
+    messageDiv.style.display = 'block';
+    setTimeout(() => messageDiv.style.display = 'none', 3000);
+}
+
+loadTabContent();
+
+</script>
+</body>
+</html>
