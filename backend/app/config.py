@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "sqlite:///./pickleball_league.db"
+        "sqlite:////app/data/pickleball_league.db"
     )
 
     # JWT
