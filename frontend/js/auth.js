@@ -65,6 +65,7 @@ function logout() {
 }
 
 function updateNavbar() {
+    // Update Navigation Bar
     const user = checkAuth();
 
     const loginBtn = document.getElementById('loginBtn');
