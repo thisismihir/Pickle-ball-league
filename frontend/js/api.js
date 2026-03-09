@@ -3,14 +3,14 @@ function getAuthHeaders() {
 
     return {
         "Content-Type": "application/json",
-        ...(token && { "Authorization": Bearer ${token} })
+        ...(token && { "Authorization": `Bearer ${token}` })
     };
 }
 
 async function apiRequest(endpoint, options = {}) {
     try {
         const response = await fetch(
-            ${window.API_BASE_URL || "http://localhost:8000"}${endpoint},
+            `${window.API_BASE_URL || "http://64.227.184.118:8000"}${endpoint}`,
             {
                 ...options,
                 headers: getAuthHeaders(),
@@ -36,12 +36,12 @@ async function apiRequest(endpoint, options = {}) {
             // Handle validation errors (422)
             if (errorData.detail && Array.isArray(errorData.detail)) {
                 const errors = errorData.detail
-                    .map(err => ${err.loc.join(".")} - ${err.msg})
+                    .map(err => `${err.loc.join(".")} - ${err.msg}`)
                     .join("; ");
                 throw new Error(errors);
             }
 
-            throw new Error(errorData.detail || HTTP ${response.status});
+            throw new Error(errorData.detail || `HTTP ${response.status}`);
         }
 
         return response;
@@ -62,7 +62,7 @@ const api = {
 
     async login(username, password) {
         const response = await fetch(
-            ${window.API_BASE_URL || "http://localhost:8000"}/api/auth/login,
+            `${window.API_BASE_URL || "http://64.227.184.118:8000"}/api/auth/login`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -74,7 +74,7 @@ const api = {
 
     async register(username, email, password) {
         const response = await fetch(
-            ${window.API_BASE_URL || "http://localhost:8000"}/api/auth/register,
+            `${window.API_BASE_URL || "http://64.227.184.118:8000"}/api/auth/register`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -93,13 +93,13 @@ const api = {
 
     async getTeams(includePending = false) {
         const response = await apiRequest(
-            /api/teams?include_pending=${includePending}
+            `/api/teams?include_pending=${includePending}`
         );
         return response.json();
     },
 
     async getTeam(teamId) {
-        const response = await apiRequest(/api/teams/${teamId});
+        const response = await apiRequest(`/api/teams/${teamId}`);
         return response.json();
     },
 
@@ -121,7 +121,7 @@ const api = {
 
     async approveTeam(teamId, status) {
         const response = await apiRequest(
-            /api/teams/${teamId}/approve,
+            `/api/teams/${teamId}/approve`,
             {
                 method: "PUT",
                 body: JSON.stringify({ status }),
@@ -150,14 +150,14 @@ const api = {
 
     async getPlayers(includePending = false, unassignedOnly = false) {
         const response = await apiRequest(
-            /api/players?include_pending=${includePending}&unassigned_only=${unassignedOnly}
+            `/api/players?include_pending=${includePending}&unassigned_only=${unassignedOnly}`
         );
         return response.json();
     },
 
     async approvePlayer(playerId, status) {
         const response = await apiRequest(
-            /api/players/${playerId}/approve,
+            `/api/players/${playerId}/approve`,
             {
                 method: "PUT",
                 body: JSON.stringify({ status }),
@@ -168,7 +168,7 @@ const api = {
 
     async assignPlayer(playerId, teamId) {
         const response = await apiRequest(
-            /api/players/${playerId}/assign,
+            `/api/players/${playerId}/assign`,
             {
                 method: "POST",
                 body: JSON.stringify({ team_id: teamId }),
@@ -215,7 +215,7 @@ const api = {
         console.log("payload string length:", payloadString.length);
 
         const response = await apiRequest(
-            /api/matches/${fixtureId}/submit-score,
+            `/api/matches/${fixtureId}/submit-score`,
             {
                 method: "POST",
                 body: payloadString,
@@ -232,7 +232,7 @@ const api = {
 
     async confirmScore(fixtureId, sets) {
         const response = await apiRequest(
-            /api/matches/${fixtureId}/confirm-score,
+            `/api/matches/${fixtureId}/confirm-score`,
             {
                 method: "PUT",
                 body: JSON.stringify({ sets }),
@@ -243,7 +243,7 @@ const api = {
 
     async resetScore(fixtureId) {
         const response = await apiRequest(
-            /api/matches/${fixtureId}/reset-score,
+            `/api/matches/${fixtureId}/reset-score`,
             {
                 method: "DELETE",
             }
@@ -255,7 +255,7 @@ const api = {
 
     async getStandings() {
         const response = await fetch(
-            ${window.API_BASE_URL || "http://localhost:8000"}/api/standings
+            `${window.API_BASE_URL || "http://64.227.184.118:8000"}/api/standings`
         );
         return response.json();
     },
@@ -263,7 +263,7 @@ const api = {
     // ================= ADMIN =================
 
     async resetTournament() {
-        const response = await apiRequest("/admin/reset-tournament", {
+        const response = await apiRequest("/api/admin/reset-tournament", {
             method: "DELETE",
         });
         return response.json();

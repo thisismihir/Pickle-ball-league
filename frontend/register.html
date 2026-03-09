@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Pick-a-League</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/config.js"></script>
 </head>
 
 <body>
@@ -103,7 +104,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     submitBtn.textContent = 'Creating account...';
 
     try {
-        const response = await fetch('http://localhost:8000/api/auth/register', {
+        const response = await fetch(getApiUrl('/api/auth/register'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

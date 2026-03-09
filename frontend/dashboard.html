@@ -55,7 +55,7 @@ if (user) {
 
 async function loadDashboard() {
     const content = document.getElementById('content');
-    content.innerHTML = <div class="loading">Loading...</div>;
+    content.innerHTML = '<div class="loading">Loading...</div>';
 
     try {
         // Regular users can't always access include_pending=true
@@ -139,7 +139,7 @@ async function loadDashboard() {
             });
         }
 
-        html += </div></div>;
+        html += `</div></div>`;
 
         // If Approved → Show quick action cards
         if (userTeam.status === 'approved') {

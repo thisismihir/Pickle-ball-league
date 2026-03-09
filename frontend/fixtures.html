@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixtures - Pick-a-League</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <a href="index.html" class="nav-brand">🏓 Pick-a-League</a>
+                <div class="nav-links">
+                    <a href="standings.html" class="nav-link">Standings</a>
+                    <a href="fixtures.html" class="nav-link">Fixtures</a>
+                    <a href="admin.html" class="nav-link" id="adminLink" style="display:none;">Admin</a>
+                </div>
+                <div class="nav-actions">
+                    <span class="user-info" id="userInfo" style="display:none;"></span>
+                    <button class="btn btn-secondary" id="logoutBtn" style="display:none;">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1 class="page-title">Fixtures</h1>
+        </div>
+        
+        <div id="content"></div>
+    </div>
+
+    <!-- Score Modal -->
+    <div id="scoreModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
+        <div style="background: white; border-radius: 1.25rem; padding: 2rem; max-width: 600px; width: 90%; margin: 2rem auto; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative;">
+            <!-- Close Button -->
+            <button onclick="closeScoreModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; color: #9ca3af; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 0.5rem; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.color='#1f2937'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#9ca3af'" title="Close">×</button>
+            
+            <h3 id="modalTitle" style="margin-bottom: 0.5rem; font-size: 1.5rem; font-weight: 600; text-align: center; color: #1f2937;">Submit Match Score</h3>
+            <p id="modalSubtitle" style="text-align: center; color: #9ca3af; margin-bottom: 2rem; font-size: 0.875rem;">Enter score and select players for each set</p>
+            
+            <!-- Set 1 -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 1rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <h4 style="margin-bottom: 1rem; color: white; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span>Set 1</span>
+                    <button id="minimizeBtn1" onclick="toggleSetCard(1)" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 0.5rem; cursor: pointer; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.3)'" onmouseout="this.style.backgroundColor='rgba(255,255,255,0.2)'" title="Minimize">−</button>
+                </h4>
+                <div id="setCard1">
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem; margin-bottom: 0.75rem;">
+                    <label id="homeTeamLabel1" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="homeScore1" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="homePlayers1" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem;">
+                    <label id="awayTeamLabel1" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="awayScore1" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="awayPlayers1" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Set 2 -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 1rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <h4 style="margin-bottom: 1rem; color: white; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span>Set 2</span>
+                    <button id="minimizeBtn2" onclick="toggleSetCard(2)" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 0.5rem; cursor: pointer; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.3)'" onmouseout="this.style.backgroundColor='rgba(255,255,255,0.2)'" title="Expand to enter score">+</button>
+                </h4>
+                <div id="setCard2">
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem; margin-bottom: 0.75rem;">
+                    <label id="homeTeamLabel2" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="homeScore2" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="homePlayers2" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem;">
+                    <label id="awayTeamLabel2" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="awayScore2" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="awayPlayers2" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Set 3 -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 1rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <h4 style="margin-bottom: 1rem; color: white; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span>Set 3</span>
+                    <button id="minimizeBtn3" onclick="toggleSetCard(3)" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 0.5rem; cursor: pointer; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.3)'" onmouseout="this.style.backgroundColor='rgba(255,255,255,0.2)'" title="Expand to enter score">+</button>
+                </h4>
+                <div id="setCard3">
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem; margin-bottom: 0.75rem;">
+                    <label id="homeTeamLabel3" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="homeScore3" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="homePlayers3" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem;">
+                    <label id="awayTeamLabel3" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="awayScore3" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="awayPlayers3" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Set 4 -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 1rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <h4 style="margin-bottom: 1rem; color: white; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span>Set 4</span>
+                    <button id="minimizeBtn4" onclick="toggleSetCard(4)" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 0.5rem; cursor: pointer; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.3)'" onmouseout="this.style.backgroundColor='rgba(255,255,255,0.2)'" title="Expand to enter score">+</button>
+                </h4>
+                <div id="setCard4">
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem; margin-bottom: 0.75rem;">
+                    <label id="homeTeamLabel4" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="homeScore4" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="homePlayers4" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem;">
+                    <label id="awayTeamLabel4" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="awayScore4" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="awayPlayers4" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Set 5 -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 1rem; padding: 1.25rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <h4 style="margin-bottom: 1rem; color: white; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span>Set 5</span>
+                    <button id="minimizeBtn5" onclick="toggleSetCard(5)" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 0.5rem; cursor: pointer; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.3)'" onmouseout="this.style.backgroundColor='rgba(255,255,255,0.2)'" title="Expand to enter score">+</button>
+                </h4>
+                <div id="setCard5">
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem; margin-bottom: 0.75rem;">
+                    <label id="homeTeamLabel5" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="homeScore5" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="homePlayers5" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                <div style="background: white; border-radius: 0.75rem; padding: 1rem;">
+                    <label id="awayTeamLabel5" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;"></label>
+                    <input type="number" id="awayScore5" min="0" placeholder="Score" class="form-input" style="margin-bottom: 0.75rem; font-size: 1.125rem; padding: 0.75rem;">
+                    <div id="awayPlayers5" style="max-height: 120px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem;">
+                        <div style="color: #9ca3af; padding: 0.5rem;">Loading...</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                <button class="btn btn-secondary" style="flex: 1; padding: 0.875rem; font-weight: 600; border-radius: 0.75rem;" onclick="closeScoreModal()">Cancel</button>
+                <button id="submitBtn" class="btn btn-primary" style="flex: 1; padding: 0.875rem; font-weight: 600; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.5);" onclick="submitScore()">Submit Score</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js?v=13"></script>
+    <script src="js/config.js"></script>
+    <script src="js/api.js?v=13"></script>
+    <script>
+        const user = requireAuth();
+        let currentFixture = null;
+        let currentHomeTeamId = null;
+        let currentAwayTeamId = null;
+        let teams = [];
+        let fixtures = []; // Store fixtures data for reference
+
+        if (user) {
+            document.getElementById('userInfo').textContent = user.username;
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            if (user.role === 'admin') {
+                document.getElementById('adminLink').style.display = 'inline';
+            }
+        }
+
+        async function loadFixtures() {
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loading">Loading fixtures...</div>';
+
+            try {
+                const [fixturesData, teamsData] = await Promise.all([
+                    api.getFixtures(),
+                    api.getTeams(false)
+                ]);
+                
+                console.log('Loaded fixtures:', fixturesData);
+                console.log('First fixture set_data:', fixturesData[0]?.set_data);
+                
+                teams = teamsData;
+                fixtures = fixturesData; // Store fixtures globally
+                
+                if (fixturesData.length === 0) {
+                    content.innerHTML = '<div class="empty-state">No fixtures available yet.</div>';
+                    return;
+                }
+
+                const rounds = [...new Set(fixturesData.map(f => f.round_number))];
+                let html = '';
+
+                rounds.forEach(round => {
+                    const roundLabel = round === 1 ? 'Home Fixtures' : 'Away Fixtures';
+                    html += `<div class="card" style="margin-bottom: 2rem;">
+                        <h2 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: -1.5rem -1.5rem 1.5rem; padding: 1rem 1.5rem; border-radius: 0.75rem 0.75rem 0 0; font-size: 1.125rem;">
+                            ${roundLabel}
+                        </h2>`;
+
+                    const roundFixtures = fixturesData.filter(f => f.round_number === round);
+                    roundFixtures.forEach(fixture => {
+                        const canSubmit = user && (user.role === 'admin' || canUserSubmit(fixture));
+                        const statusBadge = getStatusBadge(fixture.score_status || 'pending');
+                        
+                        // Parse set data if available
+                        let setScores = '';
+                        if (fixture.set_data) {
+                            try {
+                                const sets = JSON.parse(fixture.set_data);
+                                setScores = `<div id="setDetails${fixture.id}" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #f3f4f6;">`;
+                                sets.forEach((set, idx) => {
+                                    const homeWon = set.home_score > set.away_score;
+                                    const awayWon = set.away_score > set.home_score;
+                                    setScores += `
+                                        <div style="margin-bottom: ${idx < sets.length - 1 ? '1rem' : '0'}; padding: 0.75rem; 
+                                        background: ${homeWon ? '#f0fdf4' : awayWon ? '#fef2f2' : '#f9fafb'}; border-radius: 0.5rem;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                                <span style="font-size: 0.875rem; font-weight: 600; color: #6b7280;">Set ${set.set_number}</span>
+                                                <div style="display: flex; gap: 1rem; font-size: 1.125rem; font-weight: 700;">
+                                                    <span style="${homeWon ? 'color: #059669;' : 'color: #9ca3af;'}">${set.home_score}</span>
+                                                    <span style="color: #d1d5db;">-</span>
+                                                    <span style="${awayWon ? 'color: #dc2626;' : 'color: #9ca3af;'}">${set.away_score}</span>
+                                                </div>
+                                            </div>
+                                            <div style="font-size: 0.75rem; color: #6b7280; line-height: 1.5;">
+                                                <div>🏓 ${set.home_players.join(', ')}</div>
+                                                <div>🏓 ${set.away_players.join(', ')}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                                setScores += '</div>';
+                            } catch (e) {
+                                console.error('Failed to parse set data:', e);
+                            }
+                        }
+                        
+                        // Calculate week range and check if overdue
+                        let dateStr = 'Schedule TBD';
+                        let isOverdue = false;
+                        
+                        if (fixture.week_start_date && fixture.week_end_date) {
+                            const weekStart = new Date(fixture.week_start_date);
+                            const weekEnd = new Date(fixture.week_end_date);
+                            const today = new Date();
+                            
+                            isOverdue = today > weekEnd && fixture.score_status !== 'confirmed';
+                            
+                            dateStr = `${weekStart.toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric'
+                            })} - ${weekEnd.toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                year: 'numeric'
+                            })}`;
+                        }
+                        
+                        html += `
+                        <div style="padding: 1.5rem; border-bottom: 1px solid #f3f4f6; transition: background 0.2s;" 
+                             onmouseover="if(this.querySelector('.score-display')){this.style.background='#fafbfc'}" 
+                             onmouseout="this.style.background='white'">
+                            <div style="display: flex; justify-content: space-between; align-items: start; gap: 2rem;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <!-- Date info -->
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                        <span style="font-size: 0.75rem; color: ${isOverdue ? '#dc2626' : '#9ca3af'}; font-weight: ${isOverdue ? '600' : '500'}; text-transform: uppercase; letter-spacing: 0.05em;">
+                                            ${dateStr}
+                                        </span>
+                                        ${isOverdue ? '<span style="font-size: 0.75rem; background: #fee2e2; color: #dc2626; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-weight: 600;">OVERDUE</span>' : ''}
+                                        ${statusBadge}
+                                    </div>
+                                    
+                                    <!-- Teams and scores -->
+                                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center;">
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 1rem; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                ${fixture.home_team_name}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="score-display" style="display: flex; gap: 0.5rem; align-items: center; ${fixture.set_data ? 'cursor: pointer;' : ''}" 
+                                             ${fixture.set_data ? `onclick="toggleSetDetails(${fixture.id})" title="Click to view set breakdown"` : ''}>
+                                            <span style="font-size: 2rem; font-weight: 700; color: ${fixture.home_score > fixture.away_score ? '#059669' : fixture.home_score < fixture.away_score ? '#9ca3af' : '#1f2937'}; min-width: 2.5rem; text-align: center;">
+                                                ${fixture.home_score != null ? fixture.home_score : '-'}
+                                            </span>
+                                            <span style="font-size: 1.25rem; color: #d1d5db; font-weight: 300;">:</span>
+                                            <span style="font-size: 2rem; font-weight: 700; color: ${fixture.away_score > fixture.home_score ? '#059669' : fixture.away_score < fixture.home_score ? '#9ca3af' : '#1f2937'}; min-width: 2.5rem; text-align: center;">
+                                                ${fixture.away_score != null ? fixture.away_score : '-'}
+                                            </span>
+                                        </div>
+                                        
+                                        <div>
+                                            <div style="font-size: 1rem; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                ${fixture.away_team_name}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    ${setScores}
+                                </div>
+                                
+                                <!-- Action buttons -->
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0;">
+                                    ${canSubmit && fixture.score_status === 'pending' && fixture.home_score === null && fixture.away_score === null ? 
+                                        `<button class="btn btn-primary" style="white-space: nowrap; padding: 0.625rem 1.25rem; font-size: 0.875rem;" onclick="openScoreModalById(${fixture.id})">
+                                            Submit Score
+                                        </button>` : ''}
+                                    ${user && user.role === 'admin' && fixture.score_status === 'submitted' ? 
+                                        `<button class="btn btn-success" style="white-space: nowrap; padding: 0.625rem 1.25rem; font-size: 0.875rem; margin-bottom: 0.25rem;" onclick="openScoreModalById(${fixture.id})">
+                                            Confirm Score
+                                        </button>
+                                        <button class="btn btn-secondary" style="white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.75rem;" onclick="resetFixtureScore(${fixture.id})">
+                                            Reset Score
+                                        </button>` : ''}
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+
+                    html += '</div>';
+                });
+
+                content.innerHTML = html;
+            } catch (error) {
+                content.innerHTML = '<div class="alert alert-error">Failed to load fixtures</div>';
+            }
+        }
+
+        function canUserSubmit(fixture) {
+            if (!user || user.role === 'admin') return true;
+            const userTeam = teams.find(t => t.manager_id === user.id);
+            if (!userTeam) return false;
+            return fixture.home_team_id === userTeam.id || fixture.away_team_id === userTeam.id;
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'confirmed': '<span class="badge badge-success">confirmed</span>',
+                'submitted': '<span class="badge badge-warning">submitted</span>',
+                'pending': '<span class="badge badge-info">pending</span>'
+            };
+            return badges[status] || badges['pending'];
+        }
+
+        function openScoreModalById(fixtureId) {
+            const fixture = fixtures.find(f => f.id === fixtureId);
+            if (!fixture) {
+                console.error('Fixture not found:', fixtureId);
+                return;
+            }
+            console.log('Opening modal for fixture:', fixture);
+            console.log('Set data:', fixture.set_data);
+            
+            // Check if set_data is empty or null
+            const setData = fixture.set_data && fixture.set_data.trim() !== '' ? fixture.set_data : null;
+            
+            openScoreModal(
+                fixture.id,
+                fixture.home_team_name,
+                fixture.away_team_name,
+                fixture.home_team_id,
+                fixture.away_team_id,
+                setData
+            );
+        }
+        
+        function openScoreModal(fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, existingSetData = null) {
+            currentFixture = fixtureId;
+            currentHomeTeamId = homeTeamId;
+            currentAwayTeamId = awayTeamId;
+            
+            console.log('openScoreModal called with existingSetData:', existingSetData);
+            
+            // Parse existing data to check if we have filled sets
+            let hasExistingData = false;
+            if (existingSetData && existingSetData !== 'null' && existingSetData !== 'undefined') {
+                try {
+                    const parsed = typeof existingSetData === 'string' ? JSON.parse(existingSetData) : existingSetData;
+                    hasExistingData = parsed && parsed.length > 0;
+                } catch (e) {
+                    console.error('Error parsing existing data:', e);
+                }
+            }
+            
+            // Check if admin is confirming but there's no set data
+            if (user.role === 'admin' && !hasExistingData) {
+                const fixture = fixtures.find(f => f.id === fixtureId);
+                if (fixture && fixture.score_status === 'submitted') {
+                    alert('⚠️ Warning: This score was submitted without detailed set data. You will need to enter the scores and players manually, or ask the team manager to re-submit.');
+                }
+            }
+            
+            // Update modal title for admin confirmation
+            if (hasExistingData && user.role === 'admin') {
+                document.getElementById('modalTitle').textContent = 'Review & Confirm Score';
+                document.getElementById('modalSubtitle').innerHTML = '✓ <span style="color: #059669; font-weight: 600;">Pre-filled with submitted data</span> - Review and edit if needed';
+                document.getElementById('submitBtn').textContent = 'Confirm Score';
+                document.getElementById('submitBtn').className = 'btn btn-success';
+            } else {
+                document.getElementById('modalTitle').textContent = 'Submit Match Score';
+                document.getElementById('modalSubtitle').textContent = 'Enter score and select players for each set';
+                document.getElementById('submitBtn').textContent = 'Submit Score';
+                document.getElementById('submitBtn').className = 'btn btn-primary';
+            }
+            
+            // Set team labels for all sets with "Scores" suffix
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`homeTeamLabel${i}`).textContent = `${homeTeam}`;
+                document.getElementById(`awayTeamLabel${i}`).textContent = `${awayTeam}`;
+                document.getElementById(`homeScore${i}`).value = '';
+                document.getElementById(`awayScore${i}`).value = '';
+                
+                // Progressive disclosure: Set 1 expanded, Sets 2-5 minimized by default (unless there's existing data)
+                const setCard = document.getElementById(`setCard${i}`);
+                const minimizeBtn = document.getElementById(`minimizeBtn${i}`);
+                
+                if (hasExistingData || i === 1) {
+                    // Show all sets if editing existing data, or just Set 1 for new submissions
+                    setCard.style.display = 'block';
+                    minimizeBtn.textContent = '−';
+                    minimizeBtn.setAttribute('title', 'Minimize');
+                } else {
+                    // Minimize Sets 2-5 by default for cleaner initial view
+                    setCard.style.display = 'none';
+                    minimizeBtn.textContent = '+';
+                    minimizeBtn.setAttribute('title', 'Expand to enter score');
+                }
+            }
+            
+            // Load players for both teams, then pre-fill if we have existing data
+            loadTeamPlayers(homeTeamId, awayTeamId, existingSetData);
+            
+            document.getElementById('scoreModal').style.display = 'flex';
+        }
+
+        async function loadTeamPlayers(homeTeamId, awayTeamId, existingSetData = null) {
+            try {
+                const [homeTeamData, awayTeamData] = await Promise.all([
+                    api.getTeam(homeTeamId),
+                    api.getTeam(awayTeamId)
+                ]);
+                
+                // Parse existing set data if provided
+                let setsData = null;
+                if (existingSetData && existingSetData !== 'null' && existingSetData !== 'undefined') {
+                    try {
+                        // If it's already a string, parse it; if it's an object, use it directly
+                        setsData = typeof existingSetData === 'string' ? JSON.parse(existingSetData) : existingSetData;
+                        console.log('Loaded existing set data:', setsData);
+                    } catch (e) {
+                        console.error('Failed to parse set data:', e, 'Data:', existingSetData);
+                    }
+                }
+                
+                // Populate player checkboxes for all five sets
+                for (let i = 1; i <= 5; i++) {
+                    const homeDiv = document.getElementById(`homePlayers${i}`);
+                    const awayDiv = document.getElementById(`awayPlayers${i}`);
+                    
+                    // Get pre-selected players for this set if available
+                    const setData = setsData ? setsData.find(s => s.set_number === i) : null;
+                    const preSelectedHomePlayers = setData ? setData.home_players : [];
+                    const preSelectedAwayPlayers = setData ? setData.away_players : [];
+                    
+                    // Pre-fill scores if available
+                    if (setData) {
+                        document.getElementById(`homeScore${i}`).value = setData.home_score;
+                        document.getElementById(`awayScore${i}`).value = setData.away_score;
+                    }
+                    
+                    homeDiv.innerHTML = homeTeamData.players.map(p => {
+                        const playerName = `${p.first_name} ${p.last_name}`;
+                        const isChecked = preSelectedHomePlayers.includes(playerName);
+                        return `
+                        <label style="display: flex; align-items: center; padding: 0.5rem; cursor: pointer; border-radius: 0.375rem; transition: background-color 0.2s;" 
+                               onmouseover="this.style.backgroundColor='#f3f4f6'" 
+                               onmouseout="this.style.backgroundColor='transparent'">
+                            <input type="checkbox" name="homePlayers${i}" value="${playerName}" 
+                                   ${isChecked ? 'checked' : ''}
+                                   style="margin-right: 0.5rem; width: 18px; height: 18px; cursor: pointer;"
+                                   onchange="limitPlayerSelection(this, 'homePlayers${i}')">
+                            <span style="font-size: 0.9rem; color: #1f2937;">${playerName}</span>
+                        </label>
+                        `;
+                    }).join('');
+                    
+                    awayDiv.innerHTML = awayTeamData.players.map(p => {
+                        const playerName = `${p.first_name} ${p.last_name}`;
+                        const isChecked = preSelectedAwayPlayers.includes(playerName);
+                        return `
+                        <label style="display: flex; align-items: center; padding: 0.5rem; cursor: pointer; border-radius: 0.375rem; transition: background-color 0.2s;" 
+                               onmouseover="this.style.backgroundColor='#f3f4f6'" 
+                               onmouseout="this.style.backgroundColor='transparent'">
+                            <input type="checkbox" name="awayPlayers${i}" value="${playerName}" 
+                                   ${isChecked ? 'checked' : ''}
+                                   style="margin-right: 0.5rem; width: 18px; height: 18px; cursor: pointer;"
+                                   onchange="limitPlayerSelection(this, 'awayPlayers${i}')">
+                            <span style="font-size: 0.9rem; color: #1f2937;">${playerName}</span>
+                        </label>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load team players:', error);
+                alert('Failed to load team players');
+            }
+        }
+        
+        function limitPlayerSelection(checkbox, groupName) {
+            const checkboxes = document.querySelectorAll(`input[name="${groupName}"]`);
+            const checked = Array.from(checkboxes).filter(cb => cb.checked);
+            
+            if (checked.length > 2) {
+                checkbox.checked = false;
+                alert('You can only select up to 2 players per set');
+            }
+        }
+        
+        async function resetFixtureScore(fixtureId) {
+            if (!confirm('Are you sure you want to reset this score? This will clear all submitted data and allow the team manager to resubmit.')) {
+                return;
+            }
+            
+            try {
+                await api.resetScore(fixtureId);
+                alert('Score reset successfully! The team manager can now resubmit.');
+                await loadFixtures();
+            } catch (error) {
+                console.error('Reset score error:', error);
+                alert('Failed to reset score: ' + (error.message || 'Unknown error'));
+            }
+        }
+
+        function closeScoreModal() {
+            document.getElementById('scoreModal').style.display = 'none';
+            currentFixture = null;
+            currentHomeTeamId = null;
+            currentAwayTeamId = null;
+        }
+        
+        function closeModal() {
+            closeScoreModal();
+        }
+        
+        function toggleSetCard(setNumber) {
+            const card = document.getElementById(`setCard${setNumber}`);
+            const btn = document.getElementById(`minimizeBtn${setNumber}`);
+            
+            if (card.style.display === 'none') {
+                card.style.display = 'block';
+                btn.textContent = '−';
+                btn.setAttribute('title', 'Minimize');
+            } else {
+                card.style.display = 'none';
+                btn.textContent = '+';
+                btn.setAttribute('title', 'Expand');
+            }
+        }
+        
+        function toggleSetDetails(fixtureId) {
+            const detailsDiv = document.getElementById(`setDetails${fixtureId}`);
+            if (detailsDiv) {
+                const isVisible = detailsDiv.style.display === 'block';
+                detailsDiv.style.display = isVisible ? 'none' : 'block';
+            }
+        }
+
+        async function submitScore() {
+            // Collect data for all five sets
+            const sets = [];
+            
+            for (let i = 1; i <= 5; i++) {
+                const homeScore = parseInt(document.getElementById(`homeScore${i}`).value);
+                const awayScore = parseInt(document.getElementById(`awayScore${i}`).value);
+                
+                // Get selected players from checkboxes
+                const homeCheckboxes = document.querySelectorAll(`input[name="homePlayers${i}"]:checked`);
+                const awayCheckboxes = document.querySelectorAll(`input[name="awayPlayers${i}"]:checked`);
+                
+                const homePlayers = Array.from(homeCheckboxes).map(cb => cb.value);
+                const awayPlayers = Array.from(awayCheckboxes).map(cb => cb.value);
+                
+                // Validate
+                if (isNaN(homeScore) || isNaN(awayScore)) {
+                    alert(`Please enter valid scores for Set ${i}`);
+                    return;
+                }
+                
+                if (homePlayers.length < 1 || homePlayers.length > 2) {
+                    alert(`Please select 1-2 players for home team in Set ${i}`);
+                    return;
+                }
+                
+                if (awayPlayers.length < 1 || awayPlayers.length > 2) {
+                    alert(`Please select 1-2 players for away team in Set ${i}`);
+                    return;
+                }
+                
+                sets.push({
+                    set_number: i,
+                    home_score: homeScore,
+                    away_score: awayScore,
+                    home_players: homePlayers,
+                    away_players: awayPlayers
+                });
+            }
+
+            console.log('Submitting score with sets:', JSON.stringify(sets, null, 2));
+            console.log('Current fixture ID:', currentFixture);
+            console.log('User role:', user.role);
+
+            try {
+                if (user.role === 'admin') {
+                    console.log('Admin confirming score...');
+                    const result = await api.confirmScore(currentFixture, sets);
+                    console.log('Confirm result:', result);
+                } else {
+                    console.log('Team manager submitting score...');
+                    const result = await api.submitScore(currentFixture, sets);
+                    console.log('Submit result:', result);
+                }
+                alert('Score submitted successfully!');
+                closeModal();
+                await loadFixtures();
+            } catch (error) {
+                console.error('Submit score error:', error);
+                const errorMsg = error.message || error.detail || JSON.stringify(error);
+                alert('Failed to submit score: ' + errorMsg);
+            }
+        }
+
+        loadFixtures();
+    </script>
+</body>
+</html>

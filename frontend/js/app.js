@@ -3,21 +3,21 @@
 function showLoading(elementId) {
     const element = document.getElementById(elementId);
     if (element) {
-        element.innerHTML = <div class="loading">Loading...</div>;
+        element.innerHTML = `<div class="loading">Loading...</div>`;
     }
 }
 
 function showError(elementId, message) {
     const element = document.getElementById(elementId);
     if (element) {
-        element.innerHTML = <div class="alert alert-error">${message}</div>;
+        element.innerHTML = `<div class="alert alert-error">${message}</div>`;
     }
 }
 
 function showSuccess(elementId, message) {
     const element = document.getElementById(elementId);
     if (element) {
-        element.innerHTML = <div class="alert alert-success">${message}</div>;
+        element.innerHTML = `<div class="alert alert-success">${message}</div>`;
     }
 }
 

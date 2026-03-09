@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Standings - Pick-a-League</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/config.js"></script>
 </head>
 
 <body>
@@ -71,10 +72,10 @@
 <script>
 async function loadStandings() {
     const content = document.getElementById('content');
-    content.innerHTML = <div class="loading">Loading standings...</div>;
+    content.innerHTML = '<div class="loading">Loading standings...</div>';
 
     try {
-        const response = await fetch('http://localhost:8000/api/standings');
+        const response = await fetch(getApiUrl('/api/standings'));
         const standings = await response.json();
 
         if (!standings.length) {

@@ -83,7 +83,7 @@
 
 const user = requireAdmin();
 if (user) {
-    document.getElementById('userInfo').textContent = ${user.username} (Admin);
+    document.getElementById('userInfo').textContent = `${user.username} (Admin)`;
     document.getElementById('logoutBtn').onclick = logout;
 }
 
@@ -99,7 +99,7 @@ function switchTab(tab, event) {
 
 async function loadTabContent() {
     const content = document.getElementById('content');
-    content.innerHTML = <div class="loading">Loading...</div>;
+    content.innerHTML = '<div class="loading">Loading...</div>';
 
     try {
         if (currentTab === 'teams') {
@@ -111,7 +111,7 @@ async function loadTabContent() {
         }
     } catch (error) {
         content.innerHTML =
-            <div class="alert alert-error">Failed to load content: ${error.message}</div>;
+            `<div class="alert alert-error">Failed to load content: ${error.message}</div>`;
     }
 }
 
@@ -120,7 +120,7 @@ async function loadTeams() {
     const content = document.getElementById('content');
 
     if (!teams.length) {
-        content.innerHTML = <div class="empty-state">No teams registered yet.</div>;
+        content.innerHTML = `<div class="empty-state">No teams registered yet.</div>`;
         return;
     }
 
@@ -129,17 +129,22 @@ async function loadTeams() {
     teams.forEach(team => {
         html += `
         <div class="team-card">
-            <div style="display:flex; justify-content:space-between;">
-                <div>
-                    <h3>${team.name}
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div style="flex:1;">
+                    <h3 style="margin-bottom: 0.5rem; font-size:1.25rem;">${team.name}
                         <span class="badge ${
                             team.status === 'approved' ? 'badge-success'
                             : team.status === 'pending' ? 'badge-warning'
                             : 'badge-danger'
                         }">${team.status}</span>
                     </h3>
-                    ${team.description ? <p>${team.description}</p> : ''}
-                </div>
+                    ${team.description ? `<p style="color: #6b7280; margin-bottom: 0.5rem;">${team.description}</p>` : ''}
+                    <p style="color: #6b7280; font-size: 0.875rem;">
+                        <strong>Players(${team.players ? team.players.length : 0})</strong> ${
+                        team.players ? team.players.map(p => `${p.first_name} ${p.last_name}`).join(', ') : 'None'
+                    }
+                        </p>
+                
             </div>
 
             ${team.status === 'pending' ? `
@@ -151,7 +156,7 @@ async function loadTeams() {
             </div>
             ` : ''}
         </div>
-        `;
+        </div>`;
     });
 
     content.innerHTML = html;
@@ -163,7 +168,7 @@ async function loadPlayers() {
 
     if (!players.length) {
         content.innerHTML =
-            <div class="empty-state">No unassigned players.</div>;
+            `<div class="empty-state">No unassigned players.</div>`;
         return;
     }
 
@@ -227,10 +232,20 @@ async function loadFixtures() {
     `;
 }
 
+async function approveTeam(teamId, approve) {
+    try {
+        await api.approveTeam(teamId, approve ? 'approved' : 'rejected');
+        showMessage(`Team ${approve ? 'approved' : 'rejected'} successfully`);
+        await loadTabContent();
+    } catch (error) {
+        alert('Failed to update team: ' + error.message);
+    }
+}
+
 async function approvePlayer(playerId, approve) {
     try {
         await api.approvePlayer(playerId, approve ? 'approved' : 'rejected');
-        showMessage(Player ${approve ? 'approved' : 'rejected'} successfully);
+        showMessage(`Player ${approve ? 'approved' : 'rejected'} successfully`);
         await loadTabContent();
     } catch (error) {
         alert('Failed to update player: ' + error.message);
