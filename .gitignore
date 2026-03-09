@@ -1,1 +1,6 @@
 backend/pball
+backend/pickleball_league.db
+backend/app/data
+backend/app/__pycache__
+backend/app/auth/__pycache__
+backend/pickle-ball-backend.tar
