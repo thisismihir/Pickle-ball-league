@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pickle-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - pickleball-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.description=Pickle Ball Frontend"
+      - "com.example.version=1.0.0"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pickle-backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./pickleball_league.db
+      - SECRET_KEY=${SECRET_KEY:-09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost
+      - DEFAULT_ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - DEFAULT_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - DEFAULT_ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+    volumes:
+      - ./backend:/app
+    networks:
+      - pickleball-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.example.description=Pickle Ball Backend API"
+      - "com.example.version=1.0.0"
+
+  # Optional: Nginx reverse proxy (uncomment to use)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: pickle-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - frontend
+  #     - backend
+  #   networks:
+  #     - pickleball-network
+  #   restart: unless-stopped
+
+networks:
+  pickleball-network:
+    driver: bridge
+    name: pickleball-network
+
+volumes:
+  postgres_data:
+    driver: local

@@ -43,6 +43,13 @@
             <h3 id="modalTitle" style="margin-bottom: 0.5rem; font-size: 1.5rem; font-weight: 600; text-align: center; color: #1f2937;">Submit Match Score</h3>
             <p id="modalSubtitle" style="text-align: center; color: #9ca3af; margin-bottom: 2rem; font-size: 0.875rem;">Enter score and select players for each set</p>
             
+            <!-- Match Date Selection -->
+            <div style="background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem;">
+                <label for="matchDate" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937; font-size: 0.9rem;">Match Date <span style="color: #dc2626;">*</span></label>
+                <input type="date" id="matchDate" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem;" placeholder="Select a date within the week">
+                <p id="dateRangeInfo" style="margin-top: 0.5rem; font-size: 0.8rem; color: #9ca3af;">This match is scheduled for the week shown above</p>
+            </div>
+            
             <!-- Set 1 -->
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 1rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
                 <h4 style="margin-bottom: 1rem; color: white; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: space-between;">
@@ -211,8 +218,29 @@
                     return;
                 }
 
+                // Get unique teams from fixtures and build team filter
+                const teamIds = new Set();
+                fixturesData.forEach(f => {
+                    teamIds.add(f.home_team_id);
+                    teamIds.add(f.away_team_id);
+                });
+                const uniqueTeams = Array.from(teamIds).map(id => 
+                    teamsData.find(t => t.id === id)
+                ).filter(t => t).sort((a, b) => a.name.localeCompare(b.name));
+
                 const rounds = [...new Set(fixturesData.map(f => f.round_number))];
-                let html = '';
+                let html = `
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <label for="teamFilter" style="font-weight: 600; color: #1f2937;">Filter by Team:</label>
+                            <select id="teamFilter" style="padding: 0.625rem 1rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem; cursor: pointer;" onchange="filterFixturesByTeam()">
+                                <option value="">All Teams</option>
+                                ${uniqueTeams.map(team => `<option value="${team.id}">${team.name}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div id="fixturesContainer"></div>
+                `;
 
                 rounds.forEach(round => {
                     const roundLabel = round === 1 ? 'Home Fixtures' : 'Away Fixtures';
@@ -282,6 +310,8 @@
                         
                         html += `
                         <div style="padding: 1.5rem; border-bottom: 1px solid #f3f4f6; transition: background 0.2s;" 
+                             data-home-team-id="${fixture.home_team_id}"
+                             data-away-team-id="${fixture.away_team_id}"
                              onmouseover="if(this.querySelector('.score-display')){this.style.background='#fafbfc'}" 
                              onmouseout="this.style.background='white'">
                             <div style="display: flex; justify-content: space-between; align-items: start; gap: 2rem;">
@@ -345,10 +375,39 @@
                     html += '</div>';
                 });
 
-                content.innerHTML = html;
+                const fixtureContent = document.getElementById('fixturesContainer');
+                if (fixtureContent) {
+                    fixtureContent.innerHTML = html;
+                } else {
+                    content.innerHTML += html;
+                }
             } catch (error) {
                 content.innerHTML = '<div class="alert alert-error">Failed to load fixtures</div>';
             }
+        }
+
+        function filterFixturesByTeam() {
+            const teamFilter = document.getElementById('teamFilter');
+            const selectedTeamId = teamFilter ? teamFilter.value : '';
+            const fixturesContainer = document.getElementById('fixturesContainer');
+            
+            if (!fixturesContainer) return;
+            
+            // Get all fixture cards
+            const fixtureCards = fixturesContainer.querySelectorAll('[data-home-team-id]');
+            
+            fixtureCards.forEach(card => {
+                const homeTeamId = card.getAttribute('data-home-team-id');
+                const awayTeamId = card.getAttribute('data-away-team-id');
+                
+                if (!selectedTeamId) {
+                    // Show all
+                    card.style.display = 'block';
+                } else {
+                    // Show only if team is home or away
+                    card.style.display = (homeTeamId === selectedTeamId || awayTeamId === selectedTeamId) ? 'block' : 'none';
+                }
+            });
         }
 
         function canUserSubmit(fixture) {
@@ -396,6 +455,33 @@
             
             console.log('openScoreModal called with existingSetData:', existingSetData);
             
+            // Get the fixture to access date range info
+            const fixture = fixtures.find(f => f.id === fixtureId);
+            
+            // Set date range constraints on the match date input
+            const matchDateInput = document.getElementById('matchDate');
+            if (fixture && fixture.week_start_date && fixture.week_end_date) {
+                const weekStart = new Date(fixture.week_start_date);
+                const weekEnd = new Date(fixture.week_end_date);
+                
+                // Set min/max dates
+                matchDateInput.min = weekStart.toISOString().split('T')[0];
+                matchDateInput.max = weekEnd.toISOString().split('T')[0];
+                
+                // Set current value if match date already exists
+                if (fixture.match_date) {
+                    matchDateInput.value = fixture.match_date.split('T')[0];
+                } else {
+                    matchDateInput.value = '';
+                }
+                
+                // Update the range info display
+                const dateRangeInfo = document.getElementById('dateRangeInfo');
+                const startStr = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const endStr = weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                dateRangeInfo.textContent = `Select a date between ${startStr} - ${endStr}`;
+            }
+            
             // Parse existing data to check if we have filled sets
             let hasExistingData = false;
             if (existingSetData && existingSetData !== 'null' && existingSetData !== 'undefined') {
@@ -409,7 +495,6 @@
             
             // Check if admin is confirming but there's no set data
             if (user.role === 'admin' && !hasExistingData) {
-                const fixture = fixtures.find(f => f.id === fixtureId);
                 if (fixture && fixture.score_status === 'submitted') {
                     alert('⚠️ Warning: This score was submitted without detailed set data. You will need to enter the scores and players manually, or ask the team manager to re-submit.');
                 }
@@ -591,6 +676,15 @@
         }
 
         async function submitScore() {
+            // Get match date first
+            const matchDateInput = document.getElementById('matchDate');
+            const matchDate = matchDateInput.value;
+            
+            if (!matchDate) {
+                alert('Please select a match date');
+                return;
+            }
+            
             // Collect data for all five sets
             const sets = [];
             
@@ -632,16 +726,17 @@
 
             console.log('Submitting score with sets:', JSON.stringify(sets, null, 2));
             console.log('Current fixture ID:', currentFixture);
+            console.log('Match date:', matchDate);
             console.log('User role:', user.role);
 
             try {
                 if (user.role === 'admin') {
                     console.log('Admin confirming score...');
-                    const result = await api.confirmScore(currentFixture, sets);
+                    const result = await api.confirmScore(currentFixture, sets, matchDate);
                     console.log('Confirm result:', result);
                 } else {
                     console.log('Team manager submitting score...');
-                    const result = await api.submitScore(currentFixture, sets);
+                    const result = await api.submitScore(currentFixture, sets, matchDate);
                     console.log('Submit result:', result);
                 }
                 alert('Score submitted successfully!');

@@ -184,8 +184,12 @@ const api = {
         return response.json();
     },
 
-    async generateFixtures() {
-        const response = await apiRequest("/api/fixtures/generate", {
+    async generateFixtures(startDate = null) {
+        let url = "/api/fixtures/generate";
+        if (startDate) {
+            url += `?start_date=${startDate}`;
+        }
+        const response = await apiRequest(url, {
             method: "POST",
         });
         return response.json();
@@ -200,14 +204,18 @@ const api = {
 
     // ================= MATCHES =================
 
-    async submitScore(fixtureId, sets) {
+    async submitScore(fixtureId, sets, matchDate = null) {
         console.log("===== API.submitScore CALLED =====");
         console.log("fixtureId:", fixtureId);
         console.log("sets parameter:", sets);
+        console.log("matchDate:", matchDate);
         console.log("sets type:", typeof sets);
         console.log("sets length:", sets?.length);
 
         const payload = { sets };
+        if (matchDate) {
+            payload.match_date = matchDate;
+        }
         const payloadString = JSON.stringify(payload);
 
         console.log("payload object:", payload);
@@ -230,12 +238,16 @@ const api = {
         return result;
     },
 
-    async confirmScore(fixtureId, sets) {
+    async confirmScore(fixtureId, sets, matchDate = null) {
+        const payload = { sets };
+        if (matchDate) {
+            payload.match_date = matchDate;
+        }
         const response = await apiRequest(
             `/api/matches/${fixtureId}/confirm-score`,
             {
                 method: "PUT",
-                body: JSON.stringify({ sets }),
+                body: JSON.stringify(payload),
             }
         );
         return response.json();

@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.database import get_db
 from app.schemas.fixture import FixtureResponse, FixtureWithTeams
 from app.services.fixture_service import FixtureService
@@ -11,11 +11,12 @@ router = APIRouter(prefix="/api/fixtures", tags=["Fixtures"])
 
 @router.post("/generate", response_model=List[FixtureResponse], status_code=status.HTTP_201_CREATED)
 def generate_fixtures(
+    start_date: Optional[str] = Query(None, description="ISO format start date (YYYY-MM-DD). Defaults to 1 week from today."),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
-    """Generate fixtures for all approved teams (admin only)"""
-    return FixtureService.generate_fixtures(db)
+    """Generate fixtures for all approved teams (admin only). Teams specify match dates within assigned week ranges."""
+    return FixtureService.generate_fixtures(db, start_date)
 
 @router.get("", response_model=List[FixtureWithTeams])
 def list_fixtures(

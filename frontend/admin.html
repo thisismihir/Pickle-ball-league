@@ -214,11 +214,20 @@ async function loadPlayers() {
 
 async function loadFixtures() {
     const content = document.getElementById('content');
+    
+    // Get tomorrow's date as default (1 week from today would be better, but let's be reasonable)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 7);
+    const defaultDate = tomorrow.toISOString().split('T')[0];
 
     content.innerHTML = `
         <div class="team-card">
             <h2>Fixture Management</h2>
-            <div style="display:flex; gap:1rem;">
+            <div style="display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center;">
+                <div>
+                    <label for="fixtureStartDate" style="margin-right:0.5rem;">Season Start Date:</label>
+                    <input type="date" id="fixtureStartDate" value="${defaultDate}" style="padding:0.5rem; border:1px solid #ccc; border-radius:4px;">
+                </div>
                 <button class="btn btn-primary"
                     onclick="generateFixtures()">Generate Fixtures</button>
                 <button class="btn btn-danger"
@@ -271,11 +280,14 @@ async function generateFixtures() {
     if (!confirm('Generate fixtures for approved teams?')) return;
 
     try {
-        await api.generateFixtures();
+        const startDateInput = document.getElementById('fixtureStartDate');
+        const startDate = startDateInput ? startDateInput.value : null;
+        
+        await api.generateFixtures(startDate);
         showMessage('Fixtures generated successfully');
         await loadTabContent();
     } catch (error) {
-        alert('Failed to generate fixtures');
+        alert('Failed to generate fixtures: ' + error.message);
     }
 }
 
