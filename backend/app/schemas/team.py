@@ -17,7 +17,7 @@ class TeamBase(BaseModel):
 
 
 class TeamCreate(TeamBase):
-    players: List['PlayerCreate'] = Field(..., min_items = 2, max_items=6)
+    players: List['PlayerCreate'] = Field(..., min_items = 4, max_items=6)
 
 
 class TeamUpdate(BaseModel):

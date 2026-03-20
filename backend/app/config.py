@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # League settings
     MAX_TEAMS: int = 10
-    MIN_PLAYERS_PER_TEAM: int = 2
+    MIN_PLAYERS_PER_TEAM: int = 4
     MAX_PLAYERS_PER_TEAM: int = 6
 
     class Config:
