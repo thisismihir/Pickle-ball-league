@@ -29,13 +29,14 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = (
         os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:8001,http://localhost:5173,http://localhost:3000"
+            "http://localhost:8001,http://localhost:5173,http://localhost:3000,http://64.227.184.118"
         ).split(",")
         if isinstance(os.getenv("CORS_ORIGINS"), str)
         else [
             "http://localhost:8001",
             "http://localhost:5173",
-            "http://localhost:3000"
+            "http://localhost:3000",
+            "http://64.227.184.118"
         ]
     )
 

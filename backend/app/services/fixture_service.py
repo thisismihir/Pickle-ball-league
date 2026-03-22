@@ -60,13 +60,50 @@ class FixtureService:
         num_teams = len(teams)
         matches_per_week = num_teams // 2  # 10 teams → 5 matches, 6 teams → 3 matches
 
-        # Generate all possible matchups using round-robin
-        all_matchups = list(itertools.combinations(teams, 2))
+        # Generate round-robin schedule for balanced weekly matchups
+        def generate_round_robin_schedule(teams_list):
+            """Generate a balanced round-robin schedule using proven algorithm"""
+            n = len(teams_list)
+            
+            # Ensure even number of teams
+            if n % 2 == 1:
+                teams_list = teams_list + [None]  # Add bye team
+                n = len(teams_list)
+            
+            schedule = []
+            
+            # Generate n-1 rounds (each team plays every other team once)
+            for round_num in range(n - 1):
+                matches = []
+                
+                # For odd-numbered rounds, pair teams normally
+                # For even-numbered rounds, rotate for alternating home/away
+                for i in range(n // 2):
+                    home_idx = i
+                    away_idx = n - 1 - i
+                    
+                    home = teams_list[home_idx]
+                    away = teams_list[away_idx]
+                    
+                    # Skip if either team is None (bye)
+                    if home is not None and away is not None:
+                        matches.append((home, away))
+                
+                if matches:
+                    schedule.append(matches)
+                
+                # Rotate all teams except the first one
+                teams_list = [teams_list[0]] + [teams_list[-1]] + teams_list[1:-1]
+            
+            return schedule
+        
+        # Get the round-robin schedule (9 weeks of balanced matchups)
+        schedule = generate_round_robin_schedule(teams[:])  # Pass a copy
         
         # For 2 rounds (Home + Away)
         for round_num in [1, 2]:
-            # For 9 weeks (each team plays every other team once)
-            for week in range(9):
+            # For 9 weeks (each team plays every other team once per round)
+            for week, week_matchups in enumerate(schedule):
                 # Calculate week date range
                 if round_num == 1:
                     week_start = start_date + timedelta(weeks=week)
@@ -76,11 +113,6 @@ class FixtureService:
                 week_end = week_start + timedelta(days=6)
                 week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
                 week_end = week_end.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-                # Get matches for this week
-                week_match_start = week * matches_per_week
-                week_match_end = week_match_start + matches_per_week
-                week_matchups = all_matchups[week_match_start:week_match_end]
 
                 # Create fixtures for this week
                 for home_team, away_team in week_matchups:
