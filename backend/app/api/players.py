@@ -99,4 +99,25 @@ def delete_player(
 ):
     """Delete a player (admin only)"""
     PlayerService.delete_player(db, player_id)
+
+
+@router.post("/teams/{team_id}/add", response_model=PlayerResponse, status_code=status.HTTP_201_CREATED)
+def add_player_to_team(
+    team_id: int,
+    player_data: PlayerCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add a new player to an existing approved team (team manager or admin only)"""
+    return PlayerService.add_player_to_team_post_registration(db, team_id, player_data, current_user)
+
+
+@router.get("/teams/{team_id}", response_model=List[PlayerResponse])
+def get_team_players(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all players for a specific team (accessible by team manager and admin)"""
+    return PlayerService.get_team_players(db, team_id)
     return None

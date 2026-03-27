@@ -796,6 +796,14 @@ tbody tr:last-child td {
 
 @media (max-width: 768px) {
 
+    .nav-brand img {
+        height: 60px;
+    }
+
+    .hero-logo {
+        height: 100px;
+    }
+
     .nav-links {
         display: none;
     }
@@ -819,6 +827,39 @@ tbody tr:last-child td {
 
     .page-container {
         padding: 2rem 1rem;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .nav-brand img {
+        height: 50px;
+    }
+
+    .hero-logo {
+        height: 85px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .nav-brand img {
+        height: 45px;
+    }
+
+    .hero-logo {
+        height: 80px;
+    }
+}
+
+@media (max-width: 360px) {
+
+    .nav-brand img {
+        height: 40px;
+    }
+
+    .hero-logo {
+        height: 70px;
     }
 }
 

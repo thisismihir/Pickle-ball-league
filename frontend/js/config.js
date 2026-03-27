@@ -5,7 +5,7 @@ const PRODUCTION_API_URL = 'http://64.227.184.118:8000';
 
 // DEVELOPMENT: Use localhost for local testing
 // For multi-device testing, change to your IP (run: ipconfig | findstr IPv4)
-const DEVELOPMENT_API_URL = 'http://64.227.184.118:8000';
+const DEVELOPMENT_API_URL = 'http://127.0.0.1:8001';
 
 // Auto-detect: localhost/127.0.0.1 = development, everything else = production
 const isProduction =

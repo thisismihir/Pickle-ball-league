@@ -16,23 +16,35 @@ function getCurrentUser() {
 }
 
 function getDisplayName(user) {
-    if (!user || !user.email) {
-        return user?.username?.charAt(0).toUpperCase() || 'U';
+    if (!user) {
+        return 'U';
     }
 
-    // Extract name from email (part before @)
-    const emailName = user.email.split('@')[0];
-
-    // Get initials - first letter of each part separated by . or _
-    const parts = emailName.split(/[._]/);
-    let initials = parts.map(part => part.charAt(0).toUpperCase()).join('');
-
-    // If only one part or too many, just use first letter
-    if (initials.length > 3 || initials.length === 0) {
-        initials = emailName.charAt(0).toUpperCase();
+    // If user has a team_name, use team initials (for team managers)
+    if (user.team_name) {
+        const teamName = String(user.team_name).trim();
+        const parts = teamName.split(/\s+/);
+        let initials = parts.slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('');
+        return initials || 'T';
     }
 
-    return initials;
+    // Fallback to username if available
+    if (user.username) {
+        return user.username.charAt(0).toUpperCase();
+    }
+
+    // Finally, extract initials from email (part before @)
+    if (user.email) {
+        const emailName = user.email.split('@')[0];
+        const parts = emailName.split(/[._]/);
+        let initials = parts.map(part => part.charAt(0).toUpperCase()).join('');
+        if (initials.length > 3 || initials.length === 0) {
+            initials = emailName.charAt(0).toUpperCase();
+        }
+        return initials;
+    }
+
+    return 'U';
 }
 
 function requireAuth() {

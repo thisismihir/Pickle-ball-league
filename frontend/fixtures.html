@@ -187,6 +187,20 @@
         let currentAwayTeamId = null;
         let teams = [];
         let fixtures = []; // Store fixtures data for reference
+        let fixturesLoadingInProgress = false; // Race condition guard
+
+        // Security: HTML Entity Escaping to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
 
         if (user) {
             document.getElementById('userInfo').textContent = user.username;
@@ -198,7 +212,20 @@
         }
 
         async function loadFixtures() {
+            // RACE CONDITION GUARD - prevent concurrent loads
+            if (fixturesLoadingInProgress) {
+                console.warn('Fixture loading already in progress, aborting duplicate request');
+                return;
+            }
+            fixturesLoadingInProgress = true;
+            
             const content = document.getElementById('content');
+            if (!content) {
+                console.error('Content element not found');
+                fixturesLoadingInProgress = false;
+                return;
+            }
+            
             content.innerHTML = '<div class="loading">Loading fixtures...</div>';
 
             try {
@@ -208,10 +235,9 @@
                 ]);
                 
                 console.log('Loaded fixtures:', fixturesData);
-                console.log('First fixture set_data:', fixturesData[0]?.set_data);
                 
                 teams = teamsData;
-                fixtures = fixturesData; // Store fixtures globally
+                fixtures = fixturesData;
                 
                 if (fixturesData.length === 0) {
                     content.innerHTML = '<div class="empty-state">No fixtures available yet.</div>';
@@ -221,30 +247,42 @@
                 // Get unique teams from fixtures and build team filter
                 const teamIds = new Set();
                 fixturesData.forEach(f => {
-                    teamIds.add(f.home_team_id);
-                    teamIds.add(f.away_team_id);
+                    if (f.home_team_id) teamIds.add(f.home_team_id);
+                    if (f.away_team_id) teamIds.add(f.away_team_id);
                 });
-                const uniqueTeams = Array.from(teamIds).map(id => 
-                    teamsData.find(t => t.id === id)
-                ).filter(t => t).sort((a, b) => a.name.localeCompare(b.name));
+                
+                const uniqueTeams = Array.from(teamIds)
+                    .map(id => teamsData.find(t => t && t.id === id))
+                    .filter(t => t)
+                    .sort((a, b) => {
+                        const nameA = a.name || '';
+                        const nameB = b.name || '';
+                        return nameA.localeCompare(nameB);
+                    });
 
                 const rounds = [...new Set(fixturesData.map(f => f.round_number))];
-                let html = `
+                
+                // Build filter HTML with XSS protection
+                let filterHtml = `
                     <div class="card" style="margin-bottom: 2rem;">
                         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                             <label for="teamFilter" style="font-weight: 600; color: #1f2937;">Filter by Team:</label>
-                            <select id="teamFilter" style="padding: 0.625rem 1rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem; cursor: pointer;" onchange="filterFixturesByTeam()">
+                            <select id="teamFilter" aria-label="Filter fixtures by team" style="padding: 0.625rem 1rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem; cursor: pointer;" onchange="filterFixturesByTeam()">
                                 <option value="">All Teams</option>
-                                ${uniqueTeams.map(team => `<option value="${team.id}">${team.name}</option>`).join('')}
+                                ${uniqueTeams.map(team => `<option value="${team.id}">${escapeHtml(team.name)}</option>`).join('')}
                             </select>
                         </div>
                     </div>
-                    <div id="fixturesContainer"></div>
                 `;
+
+                let fixturesHtml = '';
+
+                // Set initial content with filter section
+                content.innerHTML = filterHtml + '<div id="fixturesContainer"></div>';
 
                 rounds.forEach(round => {
                     const roundLabel = round === 1 ? 'Home Fixtures' : 'Away Fixtures';
-                    html += `<div class="card" style="margin-bottom: 2rem;">
+                    fixturesHtml += `<div class="card" style="margin-bottom: 2rem;">
                         <h2 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: -1.5rem -1.5rem 1.5rem; padding: 1rem 1.5rem; border-radius: 0.75rem 0.75rem 0 0; font-size: 1.125rem;">
                             ${roundLabel}
                         </h2>`;
@@ -308,7 +346,7 @@
                             })}`;
                         }
                         
-                        html += `
+                        fixturesHtml += `
                         <div style="padding: 1.5rem; border-bottom: 1px solid #f3f4f6; transition: background 0.2s;" 
                              data-home-team-id="${fixture.home_team_id}"
                              data-away-team-id="${fixture.away_team_id}"
@@ -372,42 +410,79 @@
                         </div>`;
                     });
 
-                    html += '</div>';
+                    fixturesHtml += '</div>';
                 });
 
                 const fixtureContent = document.getElementById('fixturesContainer');
-                if (fixtureContent) {
-                    fixtureContent.innerHTML = html;
+                if (!fixtureContent) {
+                    console.error('Critical error: fixturesContainer element not found in DOM');
+                    // Fallback: append to content directly
+                    content.innerHTML = filterHtml + fixturesHtml;
                 } else {
-                    content.innerHTML += html;
+                    fixtureContent.innerHTML = fixturesHtml;
+                }
+
+                // Verify content was rendered
+                if (content.querySelectorAll('[data-home-team-id]').length === 0) {
+                    console.warn('No fixture cards found after render');
                 }
             } catch (error) {
-                content.innerHTML = '<div class="alert alert-error">Failed to load fixtures</div>';
+                console.error('Error loading fixtures:', error);
+                content.innerHTML = '<div class="alert alert-error">Failed to load fixtures: ' + escapeHtml(error.message) + '</div>';
+            } finally {
+                fixturesLoadingInProgress = false; // CRITICAL: Release lock
             }
         }
 
         function filterFixturesByTeam() {
             const teamFilter = document.getElementById('teamFilter');
-            const selectedTeamId = teamFilter ? teamFilter.value : '';
+            if (!teamFilter) {
+                console.warn('Team filter element not found');
+                return;
+            }
+
+            const selectedTeamId = (teamFilter.value || '').toString().trim();
             const fixturesContainer = document.getElementById('fixturesContainer');
             
-            if (!fixturesContainer) return;
+            if (!fixturesContainer) {
+                console.warn('Fixtures container not found');
+                return;
+            }
             
             // Get all fixture cards
             const fixtureCards = fixturesContainer.querySelectorAll('[data-home-team-id]');
             
+            if (fixtureCards.length === 0) {
+                console.warn('No fixture cards found in container');
+                return;
+            }
+            
+            let visibleCount = 0;
+            
             fixtureCards.forEach(card => {
-                const homeTeamId = card.getAttribute('data-home-team-id');
-                const awayTeamId = card.getAttribute('data-away-team-id');
+                // Safely get and validate data attributes - FIX: null-safe
+                const homeTeamId = (card.getAttribute('data-home-team-id') || '').toString().trim();
+                const awayTeamId = (card.getAttribute('data-away-team-id') || '').toString().trim();
+                
+                if (!homeTeamId || !awayTeamId) {
+                    console.warn('Missing team ID attributes on fixture card');
+                    card.style.display = 'none';
+                    return;
+                }
                 
                 if (!selectedTeamId) {
                     // Show all
                     card.style.display = 'block';
+                    visibleCount++;
                 } else {
                     // Show only if team is home or away
-                    card.style.display = (homeTeamId === selectedTeamId || awayTeamId === selectedTeamId) ? 'block' : 'none';
+                    const isMatch = homeTeamId === selectedTeamId || awayTeamId === selectedTeamId;
+                    card.style.display = isMatch ? 'block' : 'none';
+                    if (isMatch) visibleCount++;
                 }
             });
+            
+            console.log(`Filter: ${visibleCount}/${fixtureCards.length} visible for team ${selectedTeamId || 'ALL'}`);
         }
 
         function canUserSubmit(fixture) {
@@ -456,30 +531,80 @@
             console.log('openScoreModal called with existingSetData:', existingSetData);
             
             // Get the fixture to access date range info
-            const fixture = fixtures.find(f => f.id === fixtureId);
+            const fixture = fixtures && Array.isArray(fixtures) ? fixtures.find(f => f && f.id === fixtureId) : null;
+            
+            if (!fixture) {
+                console.error('Fixture not found:', fixtureId);
+                alert('Unable to load fixture details. Please refresh and try again.');
+                closeScoreModal();
+                return;
+            }
             
             // Set date range constraints on the match date input
             const matchDateInput = document.getElementById('matchDate');
-            if (fixture && fixture.week_start_date && fixture.week_end_date) {
-                const weekStart = new Date(fixture.week_start_date);
-                const weekEnd = new Date(fixture.week_end_date);
-                
-                // Set min/max dates
-                matchDateInput.min = weekStart.toISOString().split('T')[0];
-                matchDateInput.max = weekEnd.toISOString().split('T')[0];
-                
-                // Set current value if match date already exists
-                if (fixture.match_date) {
-                    matchDateInput.value = fixture.match_date.split('T')[0];
-                } else {
+            const dateRangeInfo = document.getElementById('dateRangeInfo');
+            
+            if (!matchDateInput || !dateRangeInfo) {
+                console.error('Required form elements not found');
+                return;
+            }
+            
+            if (fixture.week_start_date) {
+                try {
+                    const weekStart = new Date(fixture.week_start_date);
+                    
+                    // Validate date parsing - FIX: check for invalid dates
+                    if (isNaN(weekStart.getTime())) {
+                        throw new Error(`Invalid date format: ${fixture.week_start_date}`);
+                    }
+                    
+                    // Calculate max date (30 days from week start)
+                    const maxDate = new Date(weekStart);
+                    maxDate.setDate(maxDate.getDate() + 30);
+                    
+                    // Set constraints
+                    const minDateStr = weekStart.toISOString().split('T')[0];
+                    const maxDateStr = maxDate.toISOString().split('T')[0];
+                    
+                    matchDateInput.min = minDateStr;
+                    matchDateInput.max = maxDateStr;
+                    
+                    // Set current value if match date already exists, otherwise default to week start date
+                    if (fixture.match_date) {
+                        const matchDateStr = fixture.match_date.split('T')[0];
+                        // Validate selected date is within range
+                        if (matchDateStr >= minDateStr && matchDateStr <= maxDateStr) {
+                            matchDateInput.value = matchDateStr;
+                        } else {
+                            console.warn('Match date outside constraint range:', matchDateStr);
+                            matchDateInput.value = minDateStr; // Default to week start
+                        }
+                    } else {
+                        // Default to first day of the week range (week_start_date)
+                        matchDateInput.value = minDateStr;
+                    }
+                    
+                    // Update the range info display
+                    const startStr = weekStart.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                    const endStr = maxDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+                    dateRangeInfo.textContent = `Select a date between ${startStr} - ${endStr} (30 days from week start)`;
+                    
+                } catch (error) {
+                    console.error('Error setting date constraints:', error);
+                    dateRangeInfo.textContent = '⚠️ Unable to validate date range. Please contact support.';
                     matchDateInput.value = '';
                 }
-                
-                // Update the range info display
-                const dateRangeInfo = document.getElementById('dateRangeInfo');
-                const startStr = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const endStr = weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                dateRangeInfo.textContent = `Select a date between ${startStr} - ${endStr}`;
+            } else {
+                console.warn('No week_start_date found in fixture');
+                dateRangeInfo.textContent = 'Fixture date not yet scheduled';
+                matchDateInput.value = '';
             }
             
             // Parse existing data to check if we have filled sets

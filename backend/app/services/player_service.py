@@ -256,3 +256,90 @@ class PlayerService:
 
         db.delete(player)
         db.commit()
+
+    @staticmethod
+    def add_player_to_team_post_registration(
+        db: Session,
+        team_id: int,
+        player_data: PlayerCreate,
+        current_user
+    ) -> Player:
+        """Add a new player to an existing approved team (post-registration)"""
+        from app.models.user import UserRole
+
+        # Get team
+        team = db.query(Team).filter(Team.id == team_id).first()
+        if not team:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Team not found"
+            )
+
+        # Check if team is approved
+        if team.status != TeamStatus.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can only add players to approved teams"
+            )
+
+        # Check authorization: user must be team manager or admin
+        if current_user.role != UserRole.ADMIN and team.manager_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to add players to this team"
+            )
+
+        # Check if email already exists
+        existing_player = db.query(Player).filter(
+            Player.email == player_data.email
+        ).first()
+        if existing_player:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Player with this email already exists"
+            )
+
+        # Check team's current player count (all statuses)
+        current_player_count = db.query(Player).filter(
+            Player.team_id == team_id
+        ).count()
+
+        if current_player_count >= settings.MAX_PLAYERS_PER_TEAM:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Team already has maximum {settings.MAX_PLAYERS_PER_TEAM} players"
+            )
+
+        # Create player with PENDING status (requires admin approval)
+        db_player = Player(
+            first_name=player_data.first_name,
+            last_name=player_data.last_name,
+            email=player_data.email,
+            phone=player_data.phone,
+            team_id=team_id,
+            status=PlayerStatus.PENDING,  # Requires admin approval
+            is_individual_registration=False
+        )
+
+        db.add(db_player)
+        db.commit()
+        db.refresh(db_player)
+
+        return db_player
+
+    @staticmethod
+    def get_team_players(
+        db: Session,
+        team_id: int
+    ) -> List[Player]:
+        """Get all players for a specific team"""
+        team = db.query(Team).filter(Team.id == team_id).first()
+        if not team:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Team not found"
+            )
+
+        return db.query(Player).filter(
+            Player.team_id == team_id
+        ).order_by(Player.created_at).all()
