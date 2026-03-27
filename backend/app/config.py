@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import List
 import os
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -9,9 +10,11 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
 
     # Database
+    # Use relative path for SQLite in development, absolute path in production
+    _db_path = Path(__file__).parent.parent / "pickleball_league.db"
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "sqlite:////app/data/pickleball_league.db"
+        f"sqlite:///{_db_path}"
     )
 
     # JWT
