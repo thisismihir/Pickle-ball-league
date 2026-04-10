@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Pick-a-League</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <div class="nav-content">
+            <a href="index.html" class="nav-brand">
+                <img src="images/logo.png" alt="Pick-a-League Logo">
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h1>Sign in to your account</h1>
+        <p class="auth-subtitle">
+            Or <a href="register.html">register a new account</a>
+        </p>
+
+        <div id="errorMessage" class="alert alert-error" style="display:none;"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required class="form-input">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required class="form-input">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                Sign in
+            </button>
+        </form>
+    </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('errorMessage');
+    const submitBtn = document.getElementById('submitBtn');
+
+    errorDiv.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing in...';
+
+    try {
+        console.log('Attempting login for user:', username);
+        
+        const response = await fetch(getApiUrl('/api/auth/login'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        console.log('Login response status:', response.status);
+        
+        // Read response text first
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        // Try to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Failed to parse JSON response:', parseError);
+            throw new Error('Invalid server response. Backend may be down.');
+        }
+
+        if (!response.ok) {
+            console.error('Login failed with status', response.status, 'detail:', data.detail);
+            throw new Error(data.detail || `Login failed (HTTP ${response.status})`);
+        }
+
+        console.log('Login successful, data:', data);
+
+        // Validate response structure
+        if (!data.access_token) {
+            console.error('No access_token in response:', data);
+            throw new Error('Invalid response: missing access_token');
+        }
+
+        if (!data.user) {
+            console.error('No user in response:', data);
+            throw new Error('Invalid response: missing user object');
+        }
+
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        console.log('Credentials stored, redirecting...');
+
+        window.location.href = data.user.role === 'admin'
+            ? 'admin.html'
+            : 'dashboard.html';
+
+    } catch (error) {
+        console.error('Login error:', error);
+        errorDiv.textContent = error.message;
+        errorDiv.style.display = 'block';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign in';
+    }
+});
+</script>
+
+</body>
+</html>

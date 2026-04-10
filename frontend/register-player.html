@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register as Player - Pick-a-League</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <div class="nav-content">
+            <a href="index.html" class="nav-brand">
+                <img src="images/logo.png" alt="Pick-a-League Logo">
+            </a>
+
+            <div class="nav-links">
+                <a href="standings.html" class="nav-link">Standings</a>
+            </div>
+
+            <div class="nav-actions">
+                <span class="user-info" id="userInfo" style="display:none;"></span>
+                <button class="btn btn-secondary" id="logoutBtn" style="display:none;">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">Register as Individual Player</h1>
+        <p style="color:#6b7280; margin-top:0.5rem;">
+            Register individually and admin can assign you to a team
+        </p>
+    </div>
+
+    <div class="card">
+        <form id="playerForm">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text"
+                           class="form-input"
+                           id="firstName"
+                           required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text"
+                           class="form-input"
+                           id="lastName"
+                           required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email"
+                       class="form-input"
+                       id="email"
+                       required>
+            </div>
+
+            <div class="alert alert-info"
+                 style="margin-top:1.5rem; margin-bottom:1.5rem;">
+                Note: Your registration will be submitted for admin approval.
+                Once approved, admin can assign you to a team.
+            </div>
+
+            <div id="message"
+                 class="alert alert-error"
+                 style="display:none;">
+            </div>
+
+            <button type="submit"
+                    class="btn btn-primary btn-lg">
+                Register as Player
+            </button>
+
+        </form>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+
+<script>
+const user = requireAuth();
+
+if (user) {
+    document.getElementById('userInfo').textContent = user.username;
+    document.getElementById('logoutBtn').style.display = 'inline-block';
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+}
+
+document.getElementById('playerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const messageDiv = document.getElementById('message');
+    messageDiv.style.display = 'none';
+
+    const firstName = document.getElementById('firstName').value;
+    const lastName  = document.getElementById('lastName').value;
+    const email     = document.getElementById('email').value;
+
+    try {
+        await api.registerPlayer({
+            first_name: firstName,
+            last_name: lastName,
+            email: email
+        });
+
+        alert('Player registered successfully! Awaiting admin approval.');
+        window.location.href = 'index.html';
+
+    } catch (error) {
+        messageDiv.textContent = error.message;
+        messageDiv.style.display = 'block';
+    }
+});
+</script>
+
+</body>
+</html>
