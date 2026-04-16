@@ -280,8 +280,23 @@
                 // Set initial content with filter section
                 content.innerHTML = filterHtml + '<div id="fixturesContainer"></div>';
 
-                rounds.forEach(round => {
-                    const roundLabel = round === 1 ? 'Home Fixtures' : 'Away Fixtures';
+                // Sort rounds chronologically and assign alternating labels
+                const sortedRounds = [...rounds].sort((a, b) => a - b);
+                let homeCount = 0;
+                let awayCount = 0;
+
+                sortedRounds.forEach((round, index) => {
+                    let roundLabel;
+                    if (index % 2 === 0) {
+                        // Even position (0, 2, 4...) = Home Fixture
+                        homeCount++;
+                        roundLabel = `Home Fixture ${homeCount}`;
+                    } else {
+                        // Odd position (1, 3, 5...) = Away Fixture
+                        awayCount++;
+                        roundLabel = `Away Fixture ${awayCount}`;
+                    }
+                    
                     fixturesHtml += `<div class="card" style="margin-bottom: 2rem;">
                         <h2 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: -1.5rem -1.5rem 1.5rem; padding: 1rem 1.5rem; border-radius: 0.75rem 0.75rem 0 0; font-size: 1.125rem;">
                             ${roundLabel}
@@ -386,6 +401,14 @@
                                             <div style="font-size: 1rem; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                                 ${fixture.away_team_name}
                                             </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Venue Info -->
+                                    <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb;">
+                                        <div style="font-size: 0.85rem; color: #6b7280; display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="font-weight: 600;">Venue:</span>
+                                            <span>${fixture.home_team_venue ? escapeHtml(fixture.home_team_venue) : 'TBD'}</span>
                                         </div>
                                     </div>
                                     

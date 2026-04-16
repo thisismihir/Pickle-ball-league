@@ -56,7 +56,7 @@ async def get_current_team_manager(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Verify that current user is a team manager"""
-    if current_user.user_role != UserRole.TEAM_MANAGER:
+    if current_user.role != UserRole.TEAM_MANAGER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions. Team manager access required."

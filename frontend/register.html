@@ -106,6 +106,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     submitBtn.textContent = 'Creating account...';
 
     try {
+        console.log('Attempting registration for:', username);
+        
         const response = await fetch(getApiUrl('/api/auth/register'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -117,15 +119,32 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
             })
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Registration failed');
+        console.log('Registration response status:', response.status);
+        
+        // Read response text first
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        // Try to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Failed to parse JSON response:', parseError);
+            throw new Error('Invalid server response. Backend may be down.');
         }
 
+        if (!response.ok) {
+            console.error('Registration failed:', data.detail || data);
+            throw new Error(data.detail || `Registration failed (HTTP ${response.status})`);
+        }
+
+        console.log('Registration successful:', data);
         alert('Registration successful! Please login.');
         window.location.href = 'login.html';
 
     } catch (error) {
+        console.error('Registration error:', error);
         errorDiv.textContent = error.message;
         errorDiv.style.display = 'block';
     } finally {

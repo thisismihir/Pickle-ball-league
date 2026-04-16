@@ -28,15 +28,16 @@ class Settings(BaseSettings):
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
     )  # 24 hours
 
-    # CORS
+    # CORS - Strip whitespace from origins
     CORS_ORIGINS: List[str] = (
-        os.getenv(
+        [origin.strip() for origin in os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:8001,http://localhost:5173,http://localhost:3000,http://64.227.184.118"
-        ).split(",")
+            "http://localhost:8000,http://127.0.0.1:8000,http://localhost:5173,http://localhost:3000,http://64.227.184.118"
+        ).split(",")]
         if isinstance(os.getenv("CORS_ORIGINS"), str)
         else [
-            "http://localhost:8001",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
             "http://localhost:5173",
             "http://localhost:3000",
             "http://64.227.184.118"

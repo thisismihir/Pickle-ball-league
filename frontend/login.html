@@ -63,6 +63,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     submitBtn.textContent = 'Signing in...';
 
     try {
+        console.log('Attempting login for user:', username);
+        
         const response = await fetch(getApiUrl('/api/auth/login'), {
             method: 'POST',
             headers: {
@@ -71,21 +73,49 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             body: JSON.stringify({ username, password })
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Login failed');
+        console.log('Login response status:', response.status);
+        
+        // Read response text first
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        // Try to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Failed to parse JSON response:', parseError);
+            throw new Error('Invalid server response. Backend may be down.');
         }
 
-        const data = await response.json();
+        if (!response.ok) {
+            console.error('Login failed with status', response.status, 'detail:', data.detail);
+            throw new Error(data.detail || `Login failed (HTTP ${response.status})`);
+        }
+
+        console.log('Login successful, data:', data);
+
+        // Validate response structure
+        if (!data.access_token) {
+            console.error('No access_token in response:', data);
+            throw new Error('Invalid response: missing access_token');
+        }
+
+        if (!data.user) {
+            console.error('No user in response:', data);
+            throw new Error('Invalid response: missing user object');
+        }
 
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        console.log('Credentials stored, redirecting...');
 
         window.location.href = data.user.role === 'admin'
             ? 'admin.html'
             : 'dashboard.html';
 
     } catch (error) {
+        console.error('Login error:', error);
         errorDiv.textContent = error.message;
         errorDiv.style.display = 'block';
     } finally {

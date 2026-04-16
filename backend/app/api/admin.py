@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.team import Team
 from app.models.player import Player
 from app.models.fixture import Fixture
@@ -25,7 +25,7 @@ def reset_tournament(
     Keep only admin users intact.
     """
     # Verify user is admin
-    if current_user.role.value != "admin":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only administrators can reset the tournament"
@@ -40,7 +40,7 @@ def reset_tournament(
         deleted_teams = db.query(Team).delete()
 
         # Delete non-admin users
-        deleted_users = db.query(User).filter(User.role != "admin").delete()
+        deleted_users = db.query(User).filter(User.role != UserRole.ADMIN).delete()
 
         db.commit()
 

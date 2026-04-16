@@ -1,11 +1,11 @@
 // Environment Configuration
 
-// PRODUCTION: Update PRODUCTION_API_URL when deploying (e.g., "https://api.yourleaguename.com")
+// PRODUCTION: Update PRODUCTION_API_URL when deploying (e.g., "https://api.yourleaguename.com\")
 const PRODUCTION_API_URL = 'http://64.227.184.118:8000';
 
-// DEVELOPMENT: Use localhost for local testing
-// For multi-device testing, change to your IP (run: ipconfig | findstr IPv4)
-const DEVELOPMENT_API_URL = 'http://127.0.0.1:8001';
+// DEVELOPMENT: Backend runs on 8000, Frontend runs on different port (3000 or 5173)
+// API always points to backend port 8000 on same hostname as frontend
+const DEVELOPMENT_API_URL = `http://${window.location.hostname}:8000`;
 
 // Auto-detect: localhost/127.0.0.1 = development, everything else = production
 const isProduction =

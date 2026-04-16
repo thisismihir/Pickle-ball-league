@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 from app.config import settings
 
-# Use argon2 as primary, bcrypt as fallback for better compatibility
-pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
+# Use bcrypt primary (all new passwords), argon2 as fallback for existing hashes
+# argon2_cffi is properly installed and available
+pwd_context = CryptContext(schemes=["bcrypt", "argon2"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

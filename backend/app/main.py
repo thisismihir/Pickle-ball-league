@@ -16,18 +16,60 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+# PATCH: Fix the broken build_middleware_stack() method in FastAPI
+# The bug is in how it unpacks middleware tuples
+original_build = app.build_middleware_stack
 
-# Configure CORS
+def fixed_build_middleware_stack():
+    """Fixed version that handles Middleware objects properly"""
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.middleware import Middleware as MiddlewareClass
+    
+    # If there's no user middleware, just return the router
+    if not app.user_middleware:
+        return app.router
+    
+    # Start with the router
+    app_stack = app.router
+    
+    # Wrap with user middleware in reverse order
+    # Handle both Middleware objects and tuples
+    for middleware in reversed(app.user_middleware):
+        if isinstance(middleware, MiddlewareClass):
+            # It's a Middleware object - extract cls and options
+            cls = middleware.cls
+            options = middleware.kwargs
+        else:
+            # It's a tuple
+            cls, options = middleware
+        
+        # Instantiate the middleware
+        if isinstance(cls, type) and issubclass(cls, BaseHTTPMiddleware):
+            app_stack = cls(app=app_stack, **options)
+        else:
+            app_stack = cls(app=app_stack, **options)
+    
+    return app_stack
+
+app.build_middleware_stack = fixed_build_middleware_stack
+
+# Add CORS middleware using the standard approach
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8080",
+        "*",
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# Include routers
+# Include routers AFTER creating the app
 app.include_router(auth.router)
 app.include_router(teams.router)
 app.include_router(players.router)
@@ -37,6 +79,7 @@ app.include_router(standings.router)
 app.include_router(admin.router)
 
 
+# Define startup event
 @app.on_event("startup")
 def on_startup():
     """Initialize database and create default admin user"""
@@ -60,6 +103,7 @@ def on_startup():
         db.close()
 
 
+# Define HTTP endpoints
 @app.get("/")
 def root():
     """Root endpoint"""
